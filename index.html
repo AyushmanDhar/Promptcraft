@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PromptCraft – System Prompt Block Composer</title>
+<meta name="description" content="Free modular system prompt builder for developers and AI builders. Assemble, save, and copy structured prompts from reusable blocks. No signup, no upload, runs in your browser.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2130;
+    --border: #2a2f42;
+    --accent: #6c8eff;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --text: #e2e8f0;
+    --text-muted: #7c86a0;
+    --text-dim: #4a5270;
+    --danger: #f87171;
+    --token-bg: #1a1d2e;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --radius: 8px;
+    --radius-sm: 4px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-tag {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stats-bar {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+  }
+
+  .stat-item { display: flex; align-items: center; gap: 5px; }
+  .stat-value { color: var(--accent); font-weight: 600; }
+
+  /* AD ZONE */
+  .ad-zone {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+  }
+
+  /* LAYOUT */
+  .app {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 380px;
+    gap: 0;
+    height: calc(100vh - 121px);
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-section {
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .block-template {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .block-template:hover {
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .block-template:active { transform: scale(0.98); }
+
+  .block-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .block-meta { flex: 1; min-width: 0; }
+  .block-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .block-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  /* SLOTS (SAVES) */
+  .slot-grid { display: flex; flex-direction: column; gap: 6px; }
+
+  .slot-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--mono);
+    transition: all 0.15s;
+    width: 100%;
+    text-align: left;
+  }
+
+  .slot-btn:hover { border-color: var(--accent); background: rgba(108,142,255,0.05); }
+  .slot-btn.empty { color: var(--text-dim); }
+  .slot-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+  .slot-dot.filled { background: var(--accent3); }
+  .slot-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slot-actions { display: flex; gap: 4px; }
+  .slot-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px;
+    border-radius: 3px;
+    line-height: 1;
+  }
+  .slot-action-btn:hover { color: var(--text); background: var(--border); }
+
+  /* CANVAS */
+  .canvas {
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .canvas-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    gap: 12px;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .canvas-empty-icon { font-size: 40px; opacity: 0.4; }
+  .canvas-empty-title { font-family: var(--mono); font-size: 15px; color: var(--text-muted); }
+  .canvas-empty-sub { font-size: 13px; line-height: 1.6; max-width: 280px; }
+
+  /* BLOCKS */
+  .block-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .block-card:hover { border-color: #3a4060; }
+  .block-card.dragging { opacity: 0.4; border-color: var(--accent); }
+  .block-card.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,142,255,0.2); }
+
+  .block-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+  }
+
+  .block-header:active { cursor: grabbing; }
+
+  .drag-handle {
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .block-type-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .block-title-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    padding: 0;
+    min-width: 0;
+  }
+
+  .block-title-input::placeholder { color: var(--text-dim); }
+
+  .block-controls { display: flex; gap: 4px; margin-left: auto; }
+
+  .block-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.12s;
+  }
+
+  .block-btn:hover { color: var(--text); background: var(--surface2); }
+  .block-btn.danger:hover { color: var(--danger); background: rgba(248,113,113,0.1); }
+
+  .block-body { padding: 12px 14px; }
+
+  .block-textarea {
+    width: 100%;
+    background: var(--token-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    resize: vertical;
+    outline: none;
+    min-height: 80px;
+    transition: border-color 0.15s;
+  }
+
+  .block-textarea:focus { border-color: var(--accent); }
+  .block-textarea::placeholder { color: var(--text-dim); }
+
+  /* PREVIEW */
+  .preview {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .preview-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .preview-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .preview-actions { margin-left: auto; display: flex; gap: 6px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #7b9dff; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: none;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: #3a4060; background: var(--surface2); }
+
+  .btn.copied { background: var(--accent3); color: #0d1117; }
+
+  .preview-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--token-bg);
+    margin: 0 16px 0 16px;
+    border-radius: var(--radius-sm);
+    margin-top: 12px;
+  }
+
+  .preview-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .preview-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .token-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .token-chip span { color: var(--accent); font-weight: 600; }
+
+  /* FORMAT toggle */
+  .format-row {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .format-label { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+  .format-btn {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .format-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* CANVAS TOOLBAR */
+  .canvas-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .toolbar-btn:hover { color: var(--text); border-color: #3a4060; background: var(--surface2); }
+  .toolbar-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* SEPARATOR label in preview */
+  .sep-label {
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4060; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--accent3);
+    color: #0d1117;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* COLLAPSED */
+  .block-card.collapsed .block-body { display: none; }
+  .block-card.collapsed .block-header { border-bottom: none; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 220px 1fr; }
+    .preview { display: none; }
+  }
+  @media (max-width: 640px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+</style>
+
+<!-- Google tag (gtag.js) placeholder — replace G-XXXXXXXXXX with your GA4 ID -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+</head>
+<body>
+
+<header>
+  <span class="logo">PromptCraft</span>
+  <span class="logo-tag">system prompt composer</span>
+  <div class="header-right">
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-item">blocks: <span class="stat-value" id="statBlocks">0</span></div>
+      <div class="stat-item">chars: <span class="stat-value" id="statChars">0</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- EthicalAds placement -->
+<div class="ad-zone">
+  <div data-ea-publisher="YOUR-PUBLISHER-ID" data-ea-type="text" style="width:100%;text-align:center;"></div>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Block types</div>
+      <div id="blockTemplates"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Saved slots</div>
+      <div class="slot-grid" id="slotGrid"></div>
+    </div>
+  </aside>
+
+  <!-- CANVAS -->
+  <main class="canvas" id="canvas">
+    <div class="canvas-toolbar" id="canvasToolbar" style="display:none">
+      <button class="toolbar-btn" onclick="clearAll()">🗑 Clear all</button>
+      <button class="toolbar-btn" onclick="saveToSlot()">💾 Save</button>
+      <button class="toolbar-btn" onclick="exportTxt()">⬇ Export .txt</button>
+    </div>
+    <div class="canvas-empty" id="canvasEmpty">
+      <div class="canvas-empty-icon">⬡</div>
+      <div class="canvas-empty-title">No blocks yet</div>
+      <div class="canvas-empty-sub">Click any block type in the sidebar to add it to your prompt.</div>
+    </div>
+    <div id="blockList"></div>
+  </main>
+
+  <!-- PREVIEW -->
+  <aside class="preview">
+    <div class="preview-header">
+      <span class="preview-title">Assembled Output</span>
+      <div class="preview-actions">
+        <button class="btn btn-primary" id="copyBtn" onclick="copyPrompt()">⎘ Copy</button>
+      </div>
+    </div>
+    <div class="format-row">
+      <span class="format-label">format:</span>
+      <button class="format-btn active" id="fmtPlain" onclick="setFormat('plain')">plain</button>
+      <button class="format-btn" id="fmtXml" onclick="setFormat('xml')">xml</button>
+      <button class="format-btn" id="fmtMd" onclick="setFormat('md')">markdown</button>
+    </div>
+    <pre class="preview-output" id="previewOutput"></pre>
+    <div class="preview-footer" id="previewFooter"></div>
+  </aside>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── BLOCK TYPE REGISTRY ─────────────────────────────────────────────
+const BLOCK_TYPES = [
+  { id:'role',       icon:'🎭', color:'#6c8eff', bg:'rgba(108,142,255,0.12)', name:'Role',         desc:'Who the AI is',         placeholder:'You are a senior backend engineer with 10 years of experience in distributed systems...' },
+  { id:'context',    icon:'📋', color:'#a78bfa', bg:'rgba(167,139,250,0.12)', name:'Context',      desc:'Background / situation',  placeholder:'The user is building a Node.js API. The codebase uses Express and PostgreSQL...' },
+  { id:'task',       icon:'🎯', color:'#f59e0b', bg:'rgba(245,158,11,0.12)',  name:'Task',         desc:'What to do',             placeholder:'Your primary task is to review code for bugs, security issues, and performance...' },
+  { id:'constraints',icon:'🔒', color:'#f87171', bg:'rgba(248,113,113,0.12)',name:'Constraints',  desc:'Rules / restrictions',   placeholder:'- Never reveal internal tool names\n- Always ask for clarification when ambiguous\n- Refuse harmful requests...' },
+  { id:'output',     icon:'📤', color:'#34d399', bg:'rgba(52,211,153,0.12)', name:'Output Format', desc:'Response structure',     placeholder:'Respond in this format:\n1. Summary (1-2 sentences)\n2. Code block if applicable\n3. Explanation...' },
+  { id:'persona',    icon:'🧬', color:'#22d3ee', bg:'rgba(34,211,238,0.12)', name:'Persona',      desc:'Tone / style',           placeholder:'Be direct and concise. Avoid hedging. Use code examples liberally. Treat the user as an expert...' },
+  { id:'examples',   icon:'📌', color:'#fb923c', bg:'rgba(251,146,60,0.12)', name:'Examples',     desc:'Few-shot samples',       placeholder:'Example 1:\nUser: How do I index this query?\nAssistant: Add index on (user_id, created_at)...' },
+  { id:'tools',      icon:'🔧', color:'#818cf8', bg:'rgba(129,140,248,0.12)', name:'Tools',       desc:'Available capabilities', placeholder:'You have access to: web_search, code_execution, file_read. Use them proactively when relevant...' },
+  { id:'memory',     icon:'🧠', color:'#e879f9', bg:'rgba(232,121,249,0.12)', name:'Memory',      desc:'Persistent context',     placeholder:'Known facts about this user:\n- Name: Alex\n- Project: SaaS invoicing tool\n- Stack: React + FastAPI...' },
+  { id:'custom',     icon:'✏️',  color:'#94a3b8', bg:'rgba(148,163,184,0.12)', name:'Custom',    desc:'Free-form block',        placeholder:'Write anything...' },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────
+let blocks = [];  // [{id, typeId, title, content, collapsed}]
+let format = 'plain';
+let dragSrcIdx = null;
+let blockIdCounter = 0;
+
+const MAX_SLOTS = 5;
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+function init() {
+  renderTemplates();
+  renderSlots();
+  const saved = localStorage.getItem('pc_blocks');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      blocks = parsed.blocks || [];
+      blockIdCounter = parsed.counter || 0;
+      format = parsed.format || 'plain';
+    } catch(e) {}
+  }
+  setFormat(format, true);
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+}
+
+// ─── TEMPLATES ────────────────────────────────────────────────────────
+function renderTemplates() {
+  const c = document.getElementById('blockTemplates');
+  c.innerHTML = BLOCK_TYPES.map(t => `
+    <div class="block-template" onclick="addBlock('${t.id}')">
+      <div class="block-icon" style="background:${t.bg}; color:${t.color}">${t.icon}</div>
+      <div class="block-meta">
+        <div class="block-name">${t.name}</div>
+        <div class="block-desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── BLOCK CRUD ───────────────────────────────────────────────────────
+function addBlock(typeId) {
+  const type = BLOCK_TYPES.find(t => t.id === typeId);
+  const block = {
+    id: ++blockIdCounter,
+    typeId,
+    title: type.name,
+    content: '',
+    collapsed: false
+  };
+  blocks.push(block);
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+  saveState();
+  // scroll to new
+  setTimeout(() => {
+    const el = document.getElementById('block-' + block.id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function removeBlock(id) {
+  blocks = blocks.filter(b => b.id !== id);
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+  saveState();
+}
+
+function toggleCollapse(id) {
+  const b = blocks.find(b => b.id === id);
+  if (b) { b.collapsed = !b.collapsed; renderBlock(id); }
+}
+
+function updateBlockTitle(id, val) {
+  const b = blocks.find(b => b.id === id);
+  if (b) { b.title = val; updatePreview(); saveState(); }
+}
+
+function updateBlockContent(id, val) {
+  const b = blocks.find(b => b.id === id);
+  if (b) { b.content = val; updatePreview(); updateStats(); saveState(); }
+}
+
+function duplicateBlock(id) {
+  const b = blocks.find(b => b.id === id);
+  if (!b) return;
+  const idx = blocks.indexOf(b);
+  const clone = { ...b, id: ++blockIdCounter, title: b.title + ' (copy)' };
+  blocks.splice(idx + 1, 0, clone);
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+  saveState();
+}
+
+function clearAll() {
+  if (blocks.length === 0) return;
+  blocks = [];
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+  saveState();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────
+function renderAllBlocks() {
+  const list = document.getElementById('blockList');
+  const empty = document.getElementById('canvasEmpty');
+  const toolbar = document.getElementById('canvasToolbar');
+  list.innerHTML = blocks.map(b => blockHTML(b)).join('');
+  empty.style.display = blocks.length === 0 ? 'flex' : 'none';
+  toolbar.style.display = blocks.length > 0 ? 'flex' : 'none';
+  attachDragListeners();
+}
+
+function renderBlock(id) {
+  const el = document.getElementById('block-' + id);
+  if (!el) return;
+  const b = blocks.find(b => b.id === id);
+  if (!b) return;
+  el.outerHTML = blockHTML(b);
+  attachDragListeners();
+}
+
+function blockHTML(b) {
+  const type = BLOCK_TYPES.find(t => t.id === b.typeId);
+  return `
+    <div class="block-card${b.collapsed ? ' collapsed':''}" id="block-${b.id}" 
+         draggable="true" data-id="${b.id}">
+      <div class="block-header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <span class="block-type-badge" style="background:${type.bg};color:${type.color}">${type.icon} ${type.name}</span>
+        <input class="block-title-input" value="${escHtml(b.title)}" 
+               placeholder="Block title"
+               oninput="updateBlockTitle(${b.id}, this.value)" />
+        <div class="block-controls">
+          <button class="block-btn" title="Duplicate" onclick="duplicateBlock(${b.id})">⧉</button>
+          <button class="block-btn" title="${b.collapsed?'Expand':'Collapse'}" onclick="toggleCollapse(${b.id})">${b.collapsed?'▸':'▾'}</button>
+          <button class="block-btn danger" title="Remove" onclick="removeBlock(${b.id})">✕</button>
+        </div>
+      </div>
+      <div class="block-body">
+        <textarea class="block-textarea" rows="4"
+          placeholder="${escHtml(type.placeholder)}"
+          oninput="updateBlockContent(${b.id}, this.value)">${escHtml(b.content)}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────────────────
+function attachDragListeners() {
+  document.querySelectorAll('.block-card').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      dragSrcIdx = blocks.findIndex(b => b.id === +el.dataset.id);
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      document.querySelectorAll('.block-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.block-card').forEach(c => c.classList.remove('drag-over'));
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIdx = blocks.findIndex(b => b.id === +el.dataset.id);
+      if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+        const [moved] = blocks.splice(dragSrcIdx, 1);
+        blocks.splice(targetIdx, 0, moved);
+        renderAllBlocks();
+        updatePreview();
+        saveState();
+      }
+      dragSrcIdx = null;
+    });
+  });
+}
+
+// ─── PREVIEW ──────────────────────────────────────────────────────────
+function setFormat(f, silent) {
+  format = f;
+  ['plain','xml','md'].forEach(id => {
+    document.getElementById('fmt' + id.charAt(0).toUpperCase() + id.slice(1))
+      .classList.toggle('active', id === f);
+  });
+  updatePreview();
+  if (!silent) saveState();
+}
+
+function buildOutput() {
+  if (blocks.length === 0) return '';
+  const active = blocks.filter(b => b.content.trim() || b.title);
+
+  if (format === 'plain') {
+    return active.map(b => {
+      const header = `## ${b.title.toUpperCase()}`;
+      return b.content.trim() ? `${header}\n${b.content.trim()}` : header;
+    }).join('\n\n');
+  }
+
+  if (format === 'xml') {
+    return active.map(b => {
+      const tag = b.title.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+      return b.content.trim()
+        ? `<${tag}>\n${b.content.trim()}\n</${tag}>`
+        : `<${tag}></${tag}>`;
+    }).join('\n\n');
+  }
+
+  if (format === 'md') {
+    return active.map(b => {
+      const type = BLOCK_TYPES.find(t => t.id === b.typeId);
+      return b.content.trim()
+        ? `### ${type.icon} ${b.title}\n\n${b.content.trim()}`
+        : `### ${type.icon} ${b.title}`;
+    }).join('\n\n---\n\n');
+  }
+
+  return '';
+}
+
+function updatePreview() {
+  const out = buildOutput();
+  const el = document.getElementById('previewOutput');
+  const footer = document.getElementById('previewFooter');
+
+  if (!out) {
+    el.textContent = '';
+    el.style.display = 'none';
+    footer.innerHTML = '';
+    return;
+  }
+
+  el.style.display = 'block';
+  el.textContent = out;
+
+  const chars = out.length;
+  const tokens = Math.round(chars / 4);
+  const words = out.split(/\s+/).filter(Boolean).length;
+
+  footer.innerHTML = `
+    <span class="token-chip">chars: <span>${chars.toLocaleString()}</span></span>
+    <span class="token-chip">~tokens: <span>${tokens.toLocaleString()}</span></span>
+    <span class="token-chip">words: <span>${words.toLocaleString()}</span></span>
+    <span class="token-chip">blocks: <span>${blocks.length}</span></span>
+  `;
+}
+
+function updateStats() {
+  const out = buildOutput();
+  document.getElementById('statBlocks').textContent = blocks.length;
+  document.getElementById('statChars').textContent = out.length.toLocaleString();
+}
+
+// ─── COPY / EXPORT ───────────────────────────────────────────────────
+async function copyPrompt() {
+  const out = buildOutput();
+  if (!out) { showToast('Nothing to copy'); return; }
+  try {
+    await navigator.clipboard.writeText(out);
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy'; btn.classList.remove('copied'); }, 1800);
+    showToast('Copied to clipboard');
+  } catch(e) {
+    showToast('Copy failed – select text manually');
+  }
+}
+
+function exportTxt() {
+  const out = buildOutput();
+  if (!out) { showToast('No content to export'); return; }
+  const blob = new Blob([out], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'system-prompt.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Exported system-prompt.txt');
+}
+
+// ─── SAVE SLOTS ───────────────────────────────────────────────────────
+function getSlotsData() {
+  try { return JSON.parse(localStorage.getItem('pc_slots') || '[]'); }
+  catch(e) { return []; }
+}
+
+function renderSlots() {
+  const slots = getSlotsData();
+  const grid = document.getElementById('slotGrid');
+  grid.innerHTML = Array.from({length: MAX_SLOTS}, (_, i) => {
+    const slot = slots[i];
+    return `
+      <button class="slot-btn${slot ? '' : ' empty'}" onclick="loadSlot(${i})">
+        <span class="slot-dot${slot ? ' filled' : ''}"></span>
+        <span class="slot-label">${slot ? slot.name : 'Empty slot ' + (i+1)}</span>
+        ${slot ? `<span class="slot-actions">
+          <span class="slot-action-btn" title="Delete" onclick="deleteSlot(event,${i})">✕</span>
+        </span>` : ''}
+      </button>
+    `;
+  }).join('');
+}
+
+function saveToSlot() {
+  if (blocks.length === 0) { showToast('No blocks to save'); return; }
+  const slots = getSlotsData();
+  const emptyIdx = slots.findIndex((_, i) => i >= slots.length);
+  const targetIdx = slots.length < MAX_SLOTS ? slots.length : 0;
+  const name = prompt('Save name:', `Prompt ${new Date().toLocaleTimeString()}`);
+  if (!name) return;
+  const data = { name, blocks: JSON.parse(JSON.stringify(blocks)), counter: blockIdCounter, format };
+  slots[targetIdx] = data;
+  localStorage.setItem('pc_slots', JSON.stringify(slots));
+  renderSlots();
+  showToast('Saved to slot ' + (targetIdx + 1));
+}
+
+function loadSlot(idx) {
+  const slots = getSlotsData();
+  const slot = slots[idx];
+  if (!slot) return;
+  if (blocks.length > 0) {
+    if (!confirm('Replace current canvas with this save?')) return;
+  }
+  blocks = slot.blocks || [];
+  blockIdCounter = slot.counter || 0;
+  format = slot.format || 'plain';
+  setFormat(format, true);
+  renderAllBlocks();
+  updatePreview();
+  updateStats();
+  saveState();
+  showToast('Loaded: ' + slot.name);
+}
+
+function deleteSlot(e, idx) {
+  e.stopPropagation();
+  const slots = getSlotsData();
+  slots.splice(idx, 1);
+  localStorage.setItem('pc_slots', JSON.stringify(slots));
+  renderSlots();
+  showToast('Slot deleted');
+}
+
+// ─── PERSIST ──────────────────────────────────────────────────────────
+function saveState() {
+  localStorage.setItem('pc_blocks', JSON.stringify({
+    blocks, counter: blockIdCounter, format
+  }));
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── START ────────────────────────────────────────────────────────────
+init();
+</script>
+
+<!-- EthicalAds script -->
+<script async src="https://media.ethicalads.io/media/client/ethicalads.min.js"></script>
+</body>
+</html>
