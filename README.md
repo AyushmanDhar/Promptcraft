@@ -1,9 +1,9 @@
-# PromptCraft – System Prompt Block Composer
+# PromptStructure – System Prompt Block Composer
 
 > Free, browser-local tool for assembling structured system prompts from modular blocks.
 > No signup. No upload. Zero storage. Single HTML file.
 
-🔗 **[Open Tool →](https://AyushmanDhar.github.io/promptcraft/)**
+🔗 **[Open Tool →](https://AyushmanDhar.github.io/PromptStructure/)**
 
 ---
 
@@ -38,8 +38,8 @@ This is a single `.html` file. Open it, build your prompt, close it. Nothing lea
 ## Self-host
 
 ```bash
-git clone https://github.com/AyushmanDhar/promptcraft
-# Open promptcraft.html in any browser. Done.
+git clone https://github.com/AyushmanDhar/PromptStructure
+# Open index.html in any browser. Done.
 ```
 
 No build step. No dependencies. No Node.js.
